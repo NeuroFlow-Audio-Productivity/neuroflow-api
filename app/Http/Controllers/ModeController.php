@@ -35,8 +35,6 @@ class ModeController extends Controller
      */
     public function getAll(): AnonymousResourceCollection
     {
-        $this->authorize('viewAny', Mode::class);
-
         return ModeResource::collection($this->modeService->getAllModes());
     }
 

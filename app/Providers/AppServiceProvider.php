@@ -61,6 +61,11 @@ class AppServiceProvider extends ServiceProvider
                     && $routeInfo->methodName() === 'byMode') {
                     $operation->security = [];
                 }
+
+                if ($routeInfo->className() === \App\Http\Controllers\ModeController::class
+                    && $routeInfo->methodName() === 'getAll') {
+                    $operation->security = [];
+                }
             })
             ->withDocumentTransformers(function (OpenApi $openApi): void {
                 $openApi->secure(SecurityScheme::http('bearer'));

@@ -711,6 +711,39 @@
                 }
             }
         },
+        "/modes/all": {
+            "get": {
+                "operationId": "modes.all",
+                "summary": "List every application mode without pagination",
+                "tags": [
+                    "Mode"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `ModeResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ModeResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
         "/modes": {
             "get": {
                 "operationId": "modes.index",
