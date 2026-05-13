@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
+use Dedoc\Scramble\Support\Generator\Operation;
 use Dedoc\Scramble\Support\Generator\SecurityScheme;
+use Dedoc\Scramble\Support\RouteInfo;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Facades\URL;
@@ -54,6 +56,12 @@ class AppServiceProvider extends ServiceProvider
 
         Scramble::configure()
             ->expose(document: '/docs/openapi.json')
+            ->withOperationTransformers(function (Operation $operation, RouteInfo $routeInfo): void {
+                if ($routeInfo->className() === \App\Http\Controllers\AudioController::class
+                    && $routeInfo->methodName() === 'byMode') {
+                    $operation->security = [];
+                }
+            })
             ->withDocumentTransformers(function (OpenApi $openApi): void {
                 $openApi->secure(SecurityScheme::http('bearer'));
             });
