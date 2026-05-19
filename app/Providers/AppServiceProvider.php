@@ -9,6 +9,7 @@ use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use Dedoc\Scramble\Support\RouteInfo;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -52,6 +53,24 @@ class AppServiceProvider extends ServiceProvider
             ]);
 
             return "{$frontendUrl}?{$query}";
+        });
+
+        ResetPassword::toMailUsing(function (object $notifiable, string $token): MailMessage {
+            $name = trim((string) ($notifiable->name ?? ''));
+            $expire = (int) config('auth.passwords.'.config('auth.defaults.passwords').'.expire');
+            $frontendUrl = rtrim((string) config('app.frontend_url'), '/').'/auth/reset-password/'.rawurlencode($token);
+            $query = http_build_query([
+                'email' => $notifiable->getEmailForPasswordReset(),
+            ]);
+            $resetUrl = "{$frontendUrl}?{$query}";
+
+            return (new MailMessage)
+                ->subject('Reset your Neuroflow password')
+                ->greeting($name !== '' ? "Hi {$name}," : 'Reset your password')
+                ->line('We received a request to create a new password for your Neuroflow account.')
+                ->action('Reset password', $resetUrl)
+                ->line("This secure link expires in {$expire} minutes.")
+                ->line('If this was not you, you can safely ignore this email. Your current password will stay unchanged.');
         });
 
         Scramble::configure()

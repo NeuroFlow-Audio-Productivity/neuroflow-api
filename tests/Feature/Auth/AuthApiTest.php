@@ -146,8 +146,13 @@ class AuthApiTest extends TestCase
         $response->assertOk();
 
         Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $notification) use ($user): bool {
-            $actionUrl = $notification->toMail($user)->actionUrl;
+            $mailMessage = $notification->toMail($user);
+            $actionUrl = $mailMessage->actionUrl;
             parse_str(parse_url($actionUrl, PHP_URL_QUERY) ?: '', $query);
+
+            $this->assertSame('Reset your Neuroflow password', $mailMessage->subject);
+            $this->assertSame("Hi {$user->name},", $mailMessage->greeting);
+            $this->assertSame('Reset password', $mailMessage->actionText);
 
             return str_starts_with(
                 $actionUrl,
