@@ -161,6 +161,49 @@ class AuthApiTest extends TestCase
         $this->assertDatabaseCount('personal_access_tokens', 1);
     }
 
+    public function test_google_callback_accepts_google_browser_redirect_get_request(): void
+    {
+        Config::set('services.google.client_id', 'google-client-id');
+        Config::set('services.google.client_secret', 'google-client-secret');
+        Config::set('services.google.redirect', 'http://localhost/api/auth/google/callback');
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'google-access-token',
+                'token_type' => 'Bearer',
+                'expires_in' => 3600,
+            ]),
+            'https://www.googleapis.com/oauth2/v3/userinfo' => Http::response([
+                'sub' => 'google-get-user-123',
+                'email' => 'browser-callback@example.com',
+                'email_verified' => true,
+                'name' => 'Browser Callback',
+                'picture' => 'https://example.com/browser.png',
+            ]),
+        ]);
+
+        $response = $this->getJson('/api/auth/google/callback?'.http_build_query([
+            'state' => '14255ecb2437533e3b0e2bccffbf9b74',
+            'iss' => 'https://accounts.google.com',
+            'code' => 'valid-google-code',
+            'scope' => 'email profile openid',
+            'authuser' => '0',
+            'prompt' => 'consent',
+        ]));
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('message', 'Google login successful.')
+            ->assertJsonPath('user.email', 'browser-callback@example.com')
+            ->assertJsonPath('user.auth_provider', 'google');
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'browser-callback@example.com',
+            'google_id' => 'google-get-user-123',
+        ]);
+        $this->assertDatabaseCount('personal_access_tokens', 1);
+    }
+
     public function test_google_login_rejects_an_existing_password_user_by_email(): void
     {
         Config::set('services.google.client_id', 'google-client-id');

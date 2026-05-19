@@ -490,22 +490,56 @@
             }
         },
         "/auth/google/callback": {
-            "post": {
+            "get": {
                 "operationId": "auth.googleCallback",
                 "summary": "Exchange a Google OAuth authorization code for a Sanctum access token",
                 "tags": [
                     "Auth"
                 ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/GoogleCallbackRequest"
-                            }
+                "parameters": [
+                    {
+                        "name": "code",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "redirect_uri",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "format": "uri",
+                            "maxLength": 2048
+                        }
+                    },
+                    {
+                        "name": "device_name",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "code_verifier",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 2048
                         }
                     }
-                },
+                ],
                 "responses": {
                     "200": {
                         "description": "`LoginResource`",
@@ -1492,40 +1526,6 @@
                     "email"
                 ],
                 "title": "ForgotPasswordRequest"
-            },
-            "GoogleCallbackRequest": {
-                "type": "object",
-                "properties": {
-                    "code": {
-                        "type": "string"
-                    },
-                    "redirect_uri": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "format": "uri",
-                        "maxLength": 2048
-                    },
-                    "device_name": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "maxLength": 255
-                    },
-                    "code_verifier": {
-                        "type": [
-                            "string",
-                            "null"
-                        ],
-                        "maxLength": 2048
-                    }
-                },
-                "required": [
-                    "code"
-                ],
-                "title": "GoogleCallbackRequest"
             },
             "GoogleRedirectResource": {
                 "type": "object",
