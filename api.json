@@ -1,9 +1,9 @@
 {
     "openapi": "3.1.0",
     "info": {
-        "title": "Laravel",
+        "title": "Neuroflow",
         "version": "1.0.0",
-        "description": "Reference for the Neuroflow API, including Sanctum authentication, email verification, password reset, and authenticated user endpoints."
+        "description": "Reference for the Neuroflow API, including Sanctum authentication, Google OAuth, email verification, password reset, and authenticated user endpoints."
     },
     "servers": [
         {
@@ -79,6 +79,91 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                }
+            }
+        },
+        "/modes/{mode}/audios": {
+            "get": {
+                "operationId": "audio.byMode",
+                "summary": "List the available audios for a mode",
+                "tags": [
+                    "Audio"
+                ],
+                "parameters": [
+                    {
+                        "name": "mode",
+                        "in": "path",
+                        "required": true,
+                        "description": "The mode ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `AudioResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/AudioResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                },
+                "security": []
+            }
+        },
+        "/audios/all": {
+            "get": {
+                "operationId": "audio.getAll",
+                "summary": "List every available audio without pagination",
+                "tags": [
+                    "Audio"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `AudioResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/AudioResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
             }
@@ -283,53 +368,6 @@
                 }
             }
         },
-        "/modes/{mode}/audios": {
-            "get": {
-                "operationId": "audio.byMode",
-                "summary": "List the available audios for a mode",
-                "tags": [
-                    "Audio"
-                ],
-                "parameters": [
-                    {
-                        "name": "mode",
-                        "in": "path",
-                        "required": true,
-                        "description": "The mode ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Array of `AudioResource`",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/AudioResource"
-                                            }
-                                        }
-                                    },
-                                    "required": [
-                                        "data"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    }
-                },
-                "security": []
-            }
-        },
         "/auth/register": {
             "post": {
                 "operationId": "auth.register",
@@ -378,6 +416,92 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`LoginResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LoginResource"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": []
+            }
+        },
+        "/auth/google/redirect": {
+            "get": {
+                "operationId": "auth.googleRedirect",
+                "description": "The frontend should redirect the user to the returned URL and may provide\nits own redirect_uri and state values when they match the Google client settings.",
+                "summary": "Generate the Google OAuth authorization URL",
+                "tags": [
+                    "Auth"
+                ],
+                "parameters": [
+                    {
+                        "name": "redirect_uri",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "format": "uri",
+                            "maxLength": 2048
+                        }
+                    },
+                    {
+                        "name": "state",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 500
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`GoogleRedirectResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GoogleRedirectResource"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": []
+            }
+        },
+        "/auth/google/callback": {
+            "post": {
+                "operationId": "auth.googleCallback",
+                "summary": "Exchange a Google OAuth authorization code for a Sanctum access token",
+                "tags": [
+                    "Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GoogleCallbackRequest"
                             }
                         }
                     }
@@ -713,7 +837,7 @@
         },
         "/modes/all": {
             "get": {
-                "operationId": "modes.all",
+                "operationId": "mode.getAll",
                 "summary": "List every application mode without pagination",
                 "tags": [
                     "Mode"
@@ -1024,6 +1148,82 @@
                 }
             }
         },
+        "/users/all": {
+            "get": {
+                "operationId": "user.getAll",
+                "summary": "List every user without pagination",
+                "tags": [
+                    "User"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `UserResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/UserResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/users/search": {
+            "get": {
+                "operationId": "user.search",
+                "summary": "Search users by name and/or email",
+                "tags": [
+                    "User"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `UserResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/UserResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/users": {
             "get": {
                 "operationId": "users.index",
@@ -1292,6 +1492,57 @@
                     "email"
                 ],
                 "title": "ForgotPasswordRequest"
+            },
+            "GoogleCallbackRequest": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string"
+                    },
+                    "redirect_uri": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2048
+                    },
+                    "device_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "code_verifier": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 2048
+                    }
+                },
+                "required": [
+                    "code"
+                ],
+                "title": "GoogleCallbackRequest"
+            },
+            "GoogleRedirectResource": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "const": "Google authorization URL generated successfully."
+                    },
+                    "authorization_url": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "message",
+                    "authorization_url"
+                ],
+                "title": "GoogleRedirectResource"
             },
             "ItemResource": {
                 "type": "object",
@@ -1775,6 +2026,16 @@
                     "email_verified_at": {
                         "type": "string"
                     },
+                    "auth_provider": {
+                        "type": "string",
+                        "enum": [
+                            "google",
+                            "password"
+                        ]
+                    },
+                    "google_avatar_url": {
+                        "type": "string"
+                    },
                     "created_at": {
                         "type": "string"
                     },
@@ -1787,6 +2048,8 @@
                     "name",
                     "email",
                     "email_verified_at",
+                    "auth_provider",
+                    "google_avatar_url",
                     "created_at",
                     "updated_at"
                 ],

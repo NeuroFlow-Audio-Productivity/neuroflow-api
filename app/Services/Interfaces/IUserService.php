@@ -32,6 +32,16 @@ interface IUserService extends IService
      */
     public function login(array $credentials): array;
 
+    /**
+     * @param  array{redirect_uri?: string, state?: string}  $parameters
+     */
+    public function googleAuthorizationUrl(array $parameters = []): string;
+
+    /**
+     * @return array{access_token: string, token_type: string, user: User}
+     */
+    public function loginWithGoogle(array $data): array;
+
     public function resendEmailVerification(string $email): void;
 
     public function verifyEmail(int $userId, string $hash): User;

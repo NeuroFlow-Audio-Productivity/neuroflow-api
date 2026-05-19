@@ -66,6 +66,19 @@ class UserRepository extends Repository implements IUserRepository
         return $this->model->newQuery()->where('email', $email)->first();
     }
 
+    public function findByGoogleId(string $googleId): ?User
+    {
+        return $this->model->newQuery()->where('google_id', $googleId)->first();
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function updateGoogleIdentity(User $user, array $data): bool
+    {
+        return $user->forceFill($data)->save();
+    }
+
     public function createAccessToken(User $user, string $tokenName): NewAccessToken
     {
         return $user->createToken($tokenName);

@@ -22,6 +22,13 @@ interface IUserRepository extends IRepository
 
     public function findByEmail(string $email): ?User;
 
+    public function findByGoogleId(string $googleId): ?User;
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function updateGoogleIdentity(User $user, array $data): bool;
+
     public function createAccessToken(User $user, string $tokenName): NewAccessToken;
 
     public function deleteAccessTokens(User $user): void;

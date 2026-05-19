@@ -10,6 +10,7 @@ use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
@@ -71,15 +72,267 @@ class AuthApiTest extends TestCase
         $response
             ->assertOk()
             ->assertJsonPath('token_type', 'Bearer')
+            ->assertJsonPath('user.auth_provider', 'password')
             ->assertJsonPath('user.profile.slug', Profile::USER_SLUG)
             ->assertJsonStructure([
                 'message',
                 'access_token',
                 'token_type',
-                'user' => ['id', 'profile' => ['id', 'name', 'slug'], 'name', 'email'],
+                'user' => ['id', 'profile' => ['id', 'name', 'slug'], 'name', 'email', 'auth_provider'],
             ]);
 
         $this->assertDatabaseCount('personal_access_tokens', 1);
+    }
+
+    public function test_google_redirect_returns_authorization_url(): void
+    {
+        Config::set('services.google.client_id', 'google-client-id');
+        Config::set('services.google.redirect', 'http://localhost:5174/auth/google/callback');
+
+        $response = $this->getJson('/api/auth/google/redirect?'.http_build_query([
+            'redirect_uri' => 'http://localhost:5174/auth/google/callback',
+            'state' => 'csrf-state-token',
+        ]));
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('message', 'Google authorization URL generated successfully.')
+            ->assertJsonStructure(['message', 'authorization_url']);
+
+        $authorizationUrl = $response->json('authorization_url');
+        parse_str(parse_url($authorizationUrl, PHP_URL_QUERY) ?: '', $query);
+
+        $this->assertStringStartsWith('https://accounts.google.com/o/oauth2/v2/auth?', $authorizationUrl);
+        $this->assertSame('google-client-id', $query['client_id'] ?? null);
+        $this->assertSame('http://localhost:5174/auth/google/callback', $query['redirect_uri'] ?? null);
+        $this->assertSame('code', $query['response_type'] ?? null);
+        $this->assertSame('openid profile email', $query['scope'] ?? null);
+        $this->assertSame('csrf-state-token', $query['state'] ?? null);
+    }
+
+    public function test_user_can_login_with_google_and_receive_a_sanctum_token(): void
+    {
+        Config::set('services.google.client_id', 'google-client-id');
+        Config::set('services.google.client_secret', 'google-client-secret');
+        Config::set('services.google.redirect', 'http://localhost:5174/auth/google/callback');
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'google-access-token',
+                'token_type' => 'Bearer',
+                'expires_in' => 3600,
+            ]),
+            'https://www.googleapis.com/oauth2/v3/userinfo' => Http::response([
+                'sub' => 'google-user-123',
+                'email' => 'ada@example.com',
+                'email_verified' => true,
+                'name' => 'Ada Lovelace',
+                'picture' => 'https://example.com/avatar.png',
+            ]),
+        ]);
+
+        $response = $this->postJson('/api/auth/google/callback', [
+            'code' => 'valid-google-code',
+            'redirect_uri' => 'http://localhost:5174/auth/google/callback',
+            'device_name' => 'chrome',
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('message', 'Google login successful.')
+            ->assertJsonPath('token_type', 'Bearer')
+            ->assertJsonPath('user.email', 'ada@example.com')
+            ->assertJsonPath('user.auth_provider', 'google')
+            ->assertJsonPath('user.google_avatar_url', 'https://example.com/avatar.png')
+            ->assertJsonPath('user.profile.slug', Profile::USER_SLUG)
+            ->assertJsonStructure([
+                'message',
+                'access_token',
+                'token_type',
+                'user' => ['id', 'profile' => ['id', 'name', 'slug'], 'name', 'email', 'auth_provider', 'google_avatar_url'],
+            ]);
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'ada@example.com',
+            'google_id' => 'google-user-123',
+            'google_avatar_url' => 'https://example.com/avatar.png',
+        ]);
+        $this->assertNotNull(User::query()->where('email', 'ada@example.com')->firstOrFail()->email_verified_at);
+        $this->assertDatabaseCount('personal_access_tokens', 1);
+    }
+
+    public function test_google_login_rejects_an_existing_password_user_by_email(): void
+    {
+        Config::set('services.google.client_id', 'google-client-id');
+        Config::set('services.google.client_secret', 'google-client-secret');
+        Config::set('services.google.redirect', 'http://localhost:5174/auth/google/callback');
+
+        $user = User::factory()->unverified()->create([
+            'email' => 'existing@example.com',
+        ]);
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'google-access-token',
+            ]),
+            'https://www.googleapis.com/oauth2/v3/userinfo' => Http::response([
+                'sub' => 'google-existing-123',
+                'email' => 'existing@example.com',
+                'email_verified' => true,
+                'name' => 'Existing User',
+                'picture' => 'https://example.com/existing.png',
+            ]),
+        ]);
+
+        $response = $this->postJson('/api/auth/google/callback', [
+            'code' => 'valid-google-code',
+        ]);
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['email', 'auth_provider'])
+            ->assertJsonPath('errors.email.0', 'This email is registered with password login. Please sign in with email and password.')
+            ->assertJsonPath('errors.auth_provider.0', 'password');
+
+        $user->refresh();
+
+        $this->assertNull($user->google_id);
+        $this->assertNull($user->google_avatar_url);
+        $this->assertNull($user->email_verified_at);
+        $this->assertDatabaseCount('users', 1);
+        $this->assertDatabaseCount('personal_access_tokens', 0);
+    }
+
+    public function test_google_user_can_continue_logging_in_with_google(): void
+    {
+        Config::set('services.google.client_id', 'google-client-id');
+        Config::set('services.google.client_secret', 'google-client-secret');
+        Config::set('services.google.redirect', 'http://localhost:5174/auth/google/callback');
+
+        $user = User::factory()->create([
+            'email' => 'google@example.com',
+            'google_id' => 'google-existing-123',
+            'google_avatar_url' => 'https://example.com/old.png',
+        ]);
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'google-access-token',
+            ]),
+            'https://www.googleapis.com/oauth2/v3/userinfo' => Http::response([
+                'sub' => 'google-existing-123',
+                'email' => 'google@example.com',
+                'email_verified' => true,
+                'name' => 'Existing Google User',
+                'picture' => 'https://example.com/new.png',
+            ]),
+        ]);
+
+        $response = $this->postJson('/api/auth/google/callback', [
+            'code' => 'valid-google-code',
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('user.id', $user->id)
+            ->assertJsonPath('user.auth_provider', 'google')
+            ->assertJsonPath('user.google_avatar_url', 'https://example.com/new.png');
+
+        $this->assertDatabaseCount('users', 1);
+        $this->assertDatabaseCount('personal_access_tokens', 1);
+    }
+
+    public function test_google_login_rejects_unverified_google_email(): void
+    {
+        Config::set('services.google.client_id', 'google-client-id');
+        Config::set('services.google.client_secret', 'google-client-secret');
+        Config::set('services.google.redirect', 'http://localhost:5174/auth/google/callback');
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'google-access-token',
+            ]),
+            'https://www.googleapis.com/oauth2/v3/userinfo' => Http::response([
+                'sub' => 'google-user-123',
+                'email' => 'unverified@example.com',
+                'email_verified' => false,
+                'name' => 'Unverified User',
+            ]),
+        ]);
+
+        $response = $this->postJson('/api/auth/google/callback', [
+            'code' => 'valid-google-code',
+        ]);
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('email');
+
+        $this->assertDatabaseMissing('users', [
+            'email' => 'unverified@example.com',
+        ]);
+        $this->assertDatabaseCount('personal_access_tokens', 0);
+    }
+
+    public function test_google_user_cannot_login_with_password(): void
+    {
+        $user = User::factory()->create([
+            'google_id' => 'google-user-123',
+            'password' => 'Password123',
+        ]);
+
+        $response = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'Password123',
+        ]);
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['email', 'auth_provider'])
+            ->assertJsonPath('errors.email.0', 'This account uses Google sign-in. Please continue with Google.')
+            ->assertJsonPath('errors.auth_provider.0', 'google');
+    }
+
+    public function test_google_user_cannot_request_password_reset(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'google_id' => 'google-user-123',
+        ]);
+
+        $response = $this->postJson('/api/auth/forgot-password', [
+            'email' => $user->email,
+        ]);
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['email', 'auth_provider'])
+            ->assertJsonPath('errors.email.0', 'This account uses Google sign-in. Please continue with Google.')
+            ->assertJsonPath('errors.auth_provider.0', 'google');
+
+        Notification::assertNothingSent();
+    }
+
+    public function test_google_user_cannot_register_with_password_using_the_same_email(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'google@example.com',
+            'google_id' => 'google-user-123',
+        ]);
+
+        $response = $this->postJson('/api/auth/register', [
+            'name' => 'Google User',
+            'email' => $user->email,
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
+        ]);
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['email', 'auth_provider'])
+            ->assertJsonPath('errors.email.0', 'This email already uses Google sign-in. Please continue with Google.')
+            ->assertJsonPath('errors.auth_provider.0', 'google');
     }
 
     public function test_unverified_user_cannot_login(): void

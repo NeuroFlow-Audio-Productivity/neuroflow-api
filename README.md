@@ -101,6 +101,54 @@ DB_PORT=3306
 
 By default, Sail exposes the app at `http://localhost` and MySQL on host port `3307`.
 
+## Google OAuth
+
+Google OAuth is implemented as a stateless API flow that still returns the same Sanctum login payload used by `POST /api/auth/login`.
+
+1. Create an OAuth 2.0 Client ID in Google Cloud Console. For a local SPA, register this authorized redirect URI:
+
+```text
+http://localhost:5174/auth/google/callback
+```
+
+2. Add the credentials to `.env`:
+
+```dotenv
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:5174/auth/google/callback
+```
+
+3. Ask the API for the Google authorization URL:
+
+```http
+GET /api/auth/google/redirect?state=random-csrf-token
+```
+
+The response contains `authorization_url`. Redirect the user to that URL from the frontend. The optional `state` value is passed through to Google so the frontend can validate it when the user returns.
+
+4. After Google redirects back to the frontend with `code`, exchange it with the API:
+
+```http
+POST /api/auth/google/callback
+Content-Type: application/json
+
+{
+  "code": "authorization_code_from_google",
+  "device_name": "browser"
+}
+```
+
+If your frontend used a redirect URI different from `GOOGLE_REDIRECT_URI`, send the same value in `redirect_uri`. PKCE clients may also send `code_verifier`.
+
+Successful responses use the normal login shape: `message`, `access_token`, `token_type`, and `user`. The `user.auth_provider` field is `google` for Google accounts and `password` for email/password accounts. New Google users are created with the default `user` profile, verified immediately from Google's verified email signal, and linked by `google_id`. Existing password users with the same email are not linked automatically; the API returns a `422` response with `errors.auth_provider[0]` set to `password`, so the client can tell the user to sign in with email and password.
+
+
+Provider separation is enforced in both directions:
+
+- Google accounts cannot use password login, password registration with the same email, or password reset. These responses include `errors.auth_provider[0] = google`.
+- Password accounts cannot use Google OAuth with the same email. These responses include `errors.auth_provider[0] = password`.
+
 ## Useful Commands
 
 ```bash

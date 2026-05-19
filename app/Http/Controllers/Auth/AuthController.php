@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
+use App\Http\Requests\Auth\GoogleCallbackRequest;
+use App\Http\Requests\Auth\GoogleRedirectRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\ResendVerificationEmailRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
+use App\Http\Resources\Auth\GoogleRedirectResource;
 use App\Http\Resources\Auth\LoginResource;
 use App\Http\Resources\Auth\MessageResource;
 use App\Http\Resources\Auth\ResetPasswordTokenResource;
@@ -51,6 +54,39 @@ class AuthController extends Controller
 
         return new LoginResource(
             'Login successful.',
+            $payload['access_token'],
+            $payload['token_type'],
+            $payload['user'],
+        );
+    }
+
+    /**
+     * Generate the Google OAuth authorization URL.
+     *
+     * The frontend should redirect the user to the returned URL and may provide
+     * its own redirect_uri and state values when they match the Google client settings.
+     *
+     * @unauthenticated
+     */
+    public function googleRedirect(GoogleRedirectRequest $request): GoogleRedirectResource
+    {
+        return new GoogleRedirectResource(
+            'Google authorization URL generated successfully.',
+            $this->userService->googleAuthorizationUrl($request->validated()),
+        );
+    }
+
+    /**
+     * Exchange a Google OAuth authorization code for a Sanctum access token.
+     *
+     * @unauthenticated
+     */
+    public function googleCallback(GoogleCallbackRequest $request): LoginResource
+    {
+        $payload = $this->userService->loginWithGoogle($request->validated());
+
+        return new LoginResource(
+            'Google login successful.',
             $payload['access_token'],
             $payload['token_type'],
             $payload['user'],
