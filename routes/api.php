@@ -12,7 +12,8 @@ Route::prefix('auth')->group(function (): void {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::get('/google/redirect', [AuthController::class, 'googleRedirect']);
-    Route::match(['get', 'post'], '/google/callback', [AuthController::class, 'googleCallback']);
+    Route::get('/google/callback', [AuthController::class, 'googleBrowserCallback']);
+    Route::post('/google/callback', [AuthController::class, 'googleCallback']);
     Route::post('/email/verification-notification', [AuthController::class, 'resendVerificationEmail'])
         ->middleware('throttle:6,1');
     Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])

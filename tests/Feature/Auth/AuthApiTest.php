@@ -161,8 +161,9 @@ class AuthApiTest extends TestCase
         $this->assertDatabaseCount('personal_access_tokens', 1);
     }
 
-    public function test_google_callback_accepts_google_browser_redirect_get_request(): void
+    public function test_google_callback_redirects_browser_get_request_to_frontend_with_token(): void
     {
+        Config::set('app.frontend_url', 'http://localhost:5174');
         Config::set('services.google.client_id', 'google-client-id');
         Config::set('services.google.client_secret', 'google-client-secret');
         Config::set('services.google.redirect', 'http://localhost/api/auth/google/callback');
@@ -182,7 +183,7 @@ class AuthApiTest extends TestCase
             ]),
         ]);
 
-        $response = $this->getJson('/api/auth/google/callback?'.http_build_query([
+        $response = $this->get('/api/auth/google/callback?'.http_build_query([
             'state' => '14255ecb2437533e3b0e2bccffbf9b74',
             'iss' => 'https://accounts.google.com',
             'code' => 'valid-google-code',
@@ -191,11 +192,15 @@ class AuthApiTest extends TestCase
             'prompt' => 'consent',
         ]));
 
-        $response
-            ->assertOk()
-            ->assertJsonPath('message', 'Google login successful.')
-            ->assertJsonPath('user.email', 'browser-callback@example.com')
-            ->assertJsonPath('user.auth_provider', 'google');
+        $response->assertRedirect();
+
+        $location = $response->headers->get('Location');
+        $this->assertIsString($location);
+        $this->assertStringStartsWith('http://localhost:5174/auth/callback?', $location);
+
+        parse_str(parse_url($location, PHP_URL_QUERY) ?: '', $query);
+        $this->assertNotEmpty($query['access_token'] ?? null);
+        $this->assertSame('Bearer', $query['token_type'] ?? null);
 
         $this->assertDatabaseHas('users', [
             'email' => 'browser-callback@example.com',
@@ -242,6 +247,53 @@ class AuthApiTest extends TestCase
         $this->assertNull($user->google_id);
         $this->assertNull($user->google_avatar_url);
         $this->assertNull($user->email_verified_at);
+        $this->assertDatabaseCount('users', 1);
+        $this->assertDatabaseCount('personal_access_tokens', 0);
+    }
+
+    public function test_google_browser_callback_redirects_existing_password_user_to_login_error(): void
+    {
+        Config::set('app.frontend_url', 'http://localhost:5174');
+        Config::set('services.google.client_id', 'google-client-id');
+        Config::set('services.google.client_secret', 'google-client-secret');
+        Config::set('services.google.redirect', 'http://localhost/api/auth/google/callback');
+
+        $user = User::factory()->unverified()->create([
+            'email' => 'existing-browser@example.com',
+        ]);
+
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'google-access-token',
+            ]),
+            'https://www.googleapis.com/oauth2/v3/userinfo' => Http::response([
+                'sub' => 'google-existing-browser-123',
+                'email' => 'existing-browser@example.com',
+                'email_verified' => true,
+                'name' => 'Existing Browser User',
+            ]),
+        ]);
+
+        $response = $this->get('/api/auth/google/callback?'.http_build_query([
+            'code' => 'valid-google-code',
+        ]));
+
+        $response->assertRedirect();
+
+        $location = $response->headers->get('Location');
+        $this->assertIsString($location);
+        $this->assertStringStartsWith('http://localhost:5174/login?', $location);
+
+        parse_str(parse_url($location, PHP_URL_QUERY) ?: '', $query);
+        $this->assertSame('auth_provider_password', $query['error'] ?? null);
+        $this->assertSame(
+            'This email is registered with password login. Please sign in with email and password.',
+            $query['message'] ?? null,
+        );
+
+        $user->refresh();
+
+        $this->assertNull($user->google_id);
         $this->assertDatabaseCount('users', 1);
         $this->assertDatabaseCount('personal_access_tokens', 0);
     }

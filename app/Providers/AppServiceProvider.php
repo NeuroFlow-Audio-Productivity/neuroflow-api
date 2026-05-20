@@ -2,10 +2,17 @@
 
 namespace App\Providers;
 
+use App\Http\Controllers\AudioController;
+use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\ModeController;
 use Dedoc\Scramble\Scramble;
+use Dedoc\Scramble\Support\Generator\Header;
 use Dedoc\Scramble\Support\Generator\OpenApi;
 use Dedoc\Scramble\Support\Generator\Operation;
+use Dedoc\Scramble\Support\Generator\Response as OpenApiResponse;
+use Dedoc\Scramble\Support\Generator\Schema;
 use Dedoc\Scramble\Support\Generator\SecurityScheme;
+use Dedoc\Scramble\Support\Generator\Types\StringType;
 use Dedoc\Scramble\Support\RouteInfo;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -76,14 +83,28 @@ class AppServiceProvider extends ServiceProvider
         Scramble::configure()
             ->expose(document: '/docs/openapi.json')
             ->withOperationTransformers(function (Operation $operation, RouteInfo $routeInfo): void {
-                if ($routeInfo->className() === \App\Http\Controllers\AudioController::class
+                if ($routeInfo->className() === AudioController::class
                     && $routeInfo->methodName() === 'byMode') {
                     $operation->security = [];
                 }
 
-                if ($routeInfo->className() === \App\Http\Controllers\ModeController::class
+                if ($routeInfo->className() === ModeController::class
                     && $routeInfo->methodName() === 'getAll') {
                     $operation->security = [];
+                }
+
+                if ($routeInfo->className() === AuthController::class
+                    && $routeInfo->methodName() === 'googleBrowserCallback') {
+                    $operation->responses = [
+                        OpenApiResponse::make(302)
+                            ->setDescription('Redirects to FRONTEND_URL/auth/callback on success or FRONTEND_URL/login on failure.')
+                            ->addHeader(
+                                'Location',
+                                (new Header)
+                                    ->setDescription('Frontend callback or login URL with OAuth result query parameters.')
+                                    ->setSchema(Schema::fromType(new StringType)),
+                            ),
+                    ];
                 }
             })
             ->withDocumentTransformers(function (OpenApi $openApi): void {

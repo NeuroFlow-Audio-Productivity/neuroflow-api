@@ -141,9 +141,9 @@ Content-Type: application/json
 
 If your frontend used a redirect URI different from `GOOGLE_REDIRECT_URI`, send the same value in `redirect_uri`. PKCE clients may also send `code_verifier`.
 
-Google may also call the same callback URL directly as a browser redirect with `GET /api/auth/google/callback?code=...`. The API accepts both methods; `POST` is recommended when your frontend receives the code first, while `GET` supports backend callback URLs registered in Google Cloud Console.
+Google may also call the same callback URL directly as a browser redirect with `GET /api/auth/google/callback?code=...`. Browser `GET` callbacks create the Sanctum token and then redirect to `FRONTEND_URL/auth/callback?access_token=...&token_type=Bearer`; failures redirect to `FRONTEND_URL/login?error=...`.
 
-Successful responses use the normal login shape: `message`, `access_token`, `token_type`, and `user`. The `user.auth_provider` field is `google` for Google accounts and `password` for email/password accounts. New Google users are created with the default `user` profile, verified immediately from Google's verified email signal, and linked by `google_id`. Existing password users with the same email are not linked automatically; the API returns a `422` response with `errors.auth_provider[0]` set to `password`, so the client can tell the user to sign in with email and password.
+Successful `POST` responses use the normal login shape: `message`, `access_token`, `token_type`, and `user`. The `user.auth_provider` field is `google` for Google accounts and `password` for email/password accounts. New Google users are created with the default `user` profile, verified immediately from Google's verified email signal, and linked by `google_id`. Existing password users with the same email are not linked automatically; `POST` returns a `422` response with `errors.auth_provider[0]` set to `password`, while browser callbacks redirect with `error=auth_provider_password` so the client can tell the user to sign in with email and password.
 
 
 Provider separation is enforced in both directions:

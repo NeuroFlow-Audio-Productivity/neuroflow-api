@@ -491,8 +491,9 @@
         },
         "/auth/google/callback": {
             "get": {
-                "operationId": "auth.googleCallback",
-                "summary": "Exchange a Google OAuth authorization code for a Sanctum access token",
+                "operationId": "auth.googleBrowserCallback",
+                "description": "Success redirects to FRONTEND_URL/auth/callback with the issued auth\ntoken payload. Failures redirect to FRONTEND_URL/login with an error\nquery parameter. Existing password accounts redirect with\nerror=auth_provider_password.",
+                "summary": "Process Google's browser OAuth callback and redirect to the frontend",
                 "tags": [
                     "Auth"
                 ],
@@ -500,9 +501,30 @@
                     {
                         "name": "code",
                         "in": "query",
-                        "required": true,
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "name": "error",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "error_description",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 2048
                         }
                     },
                     {
@@ -540,6 +562,38 @@
                         }
                     }
                 ],
+                "responses": {
+                    "302": {
+                        "description": "Redirects to FRONTEND_URL/auth/callback on success or FRONTEND_URL/login on failure.",
+                        "headers": {
+                            "Location": {
+                                "description": "Frontend callback or login URL with OAuth result query parameters.",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            },
+            "post": {
+                "operationId": "auth.googleCallback",
+                "description": "Use this endpoint when the frontend receives Google's authorization code\nand exchanges it with the API. Browser redirects from Google should use\nthe GET callback, which redirects back to the frontend instead of\ndisplaying JSON.",
+                "summary": "Exchange a Google OAuth authorization code for a Sanctum access token",
+                "tags": [
+                    "Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GoogleCallbackRequest"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
                         "description": "`LoginResource`",
@@ -1527,6 +1581,54 @@
                 ],
                 "title": "ForgotPasswordRequest"
             },
+            "GoogleCallbackRequest": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string"
+                    },
+                    "error": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "error_description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 2048
+                    },
+                    "redirect_uri": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2048
+                    },
+                    "device_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "code_verifier": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 2048
+                    }
+                },
+                "required": [
+                    "code"
+                ],
+                "title": "GoogleCallbackRequest"
+            },
             "GoogleRedirectResource": {
                 "type": "object",
                 "properties": {
@@ -2034,7 +2136,10 @@
                         ]
                     },
                     "google_avatar_url": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "created_at": {
                         "type": "string"
