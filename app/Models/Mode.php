@@ -34,6 +34,11 @@ class Mode extends Model
                 'description' => 'Delta waves: automatic fade-out for falling asleep.',
                 'color' => '#b9a7ff',
             ],
+            [
+                'name' => 'Session Alarm',
+                'description' => 'Controls end-of-session alarm sounds for Pomodoro and timer completion events.',
+                'color' => '#F97316',
+            ],
         ];
     }
 }

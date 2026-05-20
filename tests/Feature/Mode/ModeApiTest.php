@@ -89,7 +89,7 @@ class ModeApiTest extends TestCase
         $this->seed(ModeSeeder::class);
         $this->seed(ModeSeeder::class);
 
-        $this->assertDatabaseCount('modes', 3);
+        $this->assertDatabaseCount('modes', 4);
         $this->assertDatabaseHas('modes', [
             'name' => 'Sleep',
             'description' => 'Beta waves: discreet pulses for distraction-free work blocks.',
@@ -104,6 +104,11 @@ class ModeApiTest extends TestCase
             'name' => 'Sleep',
             'description' => 'Delta waves: automatic fade-out for falling asleep.',
             'color' => '#b9a7ff',
+        ]);
+        $this->assertDatabaseHas('modes', [
+            'name' => 'Session Alarm',
+            'description' => 'Controls end-of-session alarm sounds for Pomodoro and timer completion events.',
+            'color' => '#F97316',
         ]);
     }
 
@@ -127,7 +132,7 @@ class ModeApiTest extends TestCase
 
         $this->seed(ModeSeeder::class);
 
-        $this->assertDatabaseCount('modes', 3);
+        $this->assertDatabaseCount('modes', 4);
         $this->assertDatabaseHas('modes', [
             'name' => 'Sleep',
             'description' => 'Beta waves: discreet pulses for distraction-free work blocks.',
@@ -142,6 +147,11 @@ class ModeApiTest extends TestCase
             'name' => 'Sleep',
             'description' => 'Delta waves: automatic fade-out for falling asleep.',
             'color' => '#b9a7ff',
+        ]);
+        $this->assertDatabaseHas('modes', [
+            'name' => 'Session Alarm',
+            'description' => 'Controls end-of-session alarm sounds for Pomodoro and timer completion events.',
+            'color' => '#F97316',
         ]);
     }
 
