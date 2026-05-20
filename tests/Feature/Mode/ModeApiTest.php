@@ -35,6 +35,7 @@ class ModeApiTest extends TestCase
             'name' => 'Focus',
             'description' => 'Focused audio and flow behavior.',
             'color' => '#3366FF',
+            'is_system' => false,
         ]);
         Mode::factory()->create([
             'name' => 'Calm',
@@ -202,12 +203,14 @@ class ModeApiTest extends TestCase
             'name' => 'Blocked',
             'description' => 'Should not be created.',
             'color' => '#654321',
+            'is_system' => false,
         ])->assertForbidden();
 
         $this->patchJson("/api/modes/{$mode->id}", [
             'name' => 'Blocked Update',
             'description' => 'Should not be updated.',
             'color' => '#ABCDEF',
+            'is_system' => true,
         ])->assertForbidden();
 
         $this->deleteJson("/api/modes/{$mode->id}")
@@ -230,6 +233,7 @@ class ModeApiTest extends TestCase
             'name' => 'Focus',
             'description' => 'Focused audio and flow behavior.',
             'color' => '#3366FF',
+            'is_system' => false,
         ]);
 
         $response
@@ -243,6 +247,7 @@ class ModeApiTest extends TestCase
             'name' => 'Focus',
             'description' => 'Focused audio and flow behavior.',
             'color' => '#3366FF',
+            'is_system' => false,
         ]);
     }
 
@@ -260,6 +265,7 @@ class ModeApiTest extends TestCase
             'name' => 'Updated',
             'description' => 'Updated description.',
             'color' => '#ABCDEF',
+            'is_system' => true,
         ]);
 
         $response
@@ -267,13 +273,14 @@ class ModeApiTest extends TestCase
             ->assertJsonPath('name', 'Updated')
             ->assertJsonPath('description', 'Updated description.')
             ->assertJsonPath('color', '#ABCDEF')
-            ->assertJsonPath('is_system', false);
+            ->assertJsonPath('is_system', true);
 
         $this->assertDatabaseHas('modes', [
             'id' => $mode->id,
             'name' => 'Updated',
             'description' => 'Updated description.',
             'color' => '#ABCDEF',
+            'is_system' => true,
         ]);
     }
 

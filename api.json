@@ -1952,12 +1952,17 @@
                         "pattern": "^#[0-9A-Fa-f]{6}$",
                         "minLength": 7,
                         "maxLength": 7
+                    },
+                    "is_system": {
+                        "type": "boolean",
+                        "description": "Indicates whether the mode is used by system sounds instead of normal audio playback."
                     }
                 },
                 "required": [
                     "name",
                     "description",
-                    "color"
+                    "color",
+                    "is_system"
                 ],
                 "title": "StoreModeRequest"
             },
@@ -2049,12 +2054,17 @@
                         "pattern": "^#[0-9A-Fa-f]{6}$",
                         "minLength": 7,
                         "maxLength": 7
+                    },
+                    "is_system": {
+                        "type": "boolean",
+                        "description": "Indicates whether the mode is used by system sounds instead of normal audio playback."
                     }
                 },
                 "required": [
                     "name",
                     "description",
-                    "color"
+                    "color",
+                    "is_system"
                 ],
                 "title": "UpdateModeRequest"
             },

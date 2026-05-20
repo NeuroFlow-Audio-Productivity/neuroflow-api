@@ -33,6 +33,7 @@ class ModeService extends Service implements IModeService
             'name',
             'description',
             'color',
+            'is_system',
         ]));
     }
 
@@ -42,6 +43,7 @@ class ModeService extends Service implements IModeService
             'name',
             'description',
             'color',
+            'is_system',
         ]));
 
         $mode->refresh();
