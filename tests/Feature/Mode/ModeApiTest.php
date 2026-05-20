@@ -40,6 +40,7 @@ class ModeApiTest extends TestCase
             'name' => 'Calm',
             'description' => 'Gentler audio and flow behavior.',
             'color' => '#22AA88',
+            'is_system' => false,
         ]);
 
         $response = $this->getJson('/api/modes');
@@ -94,21 +95,25 @@ class ModeApiTest extends TestCase
             'name' => 'Sleep',
             'description' => 'Beta waves: discreet pulses for distraction-free work blocks.',
             'color' => '#6ee7d8',
+            'is_system' => false,
         ]);
         $this->assertDatabaseHas('modes', [
             'name' => 'Relax',
             'description' => 'Theta waves: textured ambience to slow down mental noise.',
             'color' => '#f6c177',
+            'is_system' => false,
         ]);
         $this->assertDatabaseHas('modes', [
             'name' => 'Sleep',
             'description' => 'Delta waves: automatic fade-out for falling asleep.',
             'color' => '#b9a7ff',
+            'is_system' => false,
         ]);
         $this->assertDatabaseHas('modes', [
             'name' => 'Session Alarm',
             'description' => 'Controls end-of-session alarm sounds for Pomodoro and timer completion events.',
             'color' => '#F97316',
+            'is_system' => true,
         ]);
     }
 
@@ -118,16 +123,19 @@ class ModeApiTest extends TestCase
             'name' => 'Sleep',
             'description' => 'Discreet beta pulses for distraction-free work blocks.',
             'color' => '#6ee7d8',
+            'is_system' => false,
         ]);
         Mode::query()->create([
             'name' => 'Relax',
             'description' => 'Theta textures to slow down mental noise.',
             'color' => '#f6c177',
+            'is_system' => false,
         ]);
         Mode::query()->create([
             'name' => 'Sleep',
             'description' => 'Delta waves with automatic fade-out for falling asleep.',
             'color' => '#b9a7ff',
+            'is_system' => false,
         ]);
 
         $this->seed(ModeSeeder::class);
@@ -137,21 +145,25 @@ class ModeApiTest extends TestCase
             'name' => 'Sleep',
             'description' => 'Beta waves: discreet pulses for distraction-free work blocks.',
             'color' => '#6ee7d8',
+            'is_system' => false,
         ]);
         $this->assertDatabaseHas('modes', [
             'name' => 'Relax',
             'description' => 'Theta waves: textured ambience to slow down mental noise.',
             'color' => '#f6c177',
+            'is_system' => false,
         ]);
         $this->assertDatabaseHas('modes', [
             'name' => 'Sleep',
             'description' => 'Delta waves: automatic fade-out for falling asleep.',
             'color' => '#b9a7ff',
+            'is_system' => false,
         ]);
         $this->assertDatabaseHas('modes', [
             'name' => 'Session Alarm',
             'description' => 'Controls end-of-session alarm sounds for Pomodoro and timer completion events.',
             'color' => '#F97316',
+            'is_system' => true,
         ]);
     }
 
@@ -172,7 +184,8 @@ class ModeApiTest extends TestCase
             ->assertJsonPath('id', $mode->id)
             ->assertJsonPath('name', 'Deep Work')
             ->assertJsonPath('description', 'Mode for uninterrupted flow sessions.')
-            ->assertJsonPath('color', '#111AAA');
+            ->assertJsonPath('color', '#111AAA')
+            ->assertJsonPath('is_system', false);
     }
 
     public function test_regular_user_cannot_create_update_or_delete_modes(): void
@@ -223,7 +236,8 @@ class ModeApiTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('name', 'Focus')
             ->assertJsonPath('description', 'Focused audio and flow behavior.')
-            ->assertJsonPath('color', '#3366FF');
+            ->assertJsonPath('color', '#3366FF')
+            ->assertJsonPath('is_system', false);
 
         $this->assertDatabaseHas('modes', [
             'name' => 'Focus',
@@ -252,7 +266,8 @@ class ModeApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('name', 'Updated')
             ->assertJsonPath('description', 'Updated description.')
-            ->assertJsonPath('color', '#ABCDEF');
+            ->assertJsonPath('color', '#ABCDEF')
+            ->assertJsonPath('is_system', false);
 
         $this->assertDatabaseHas('modes', [
             'id' => $mode->id,

@@ -1751,6 +1751,9 @@
                     "color": {
                         "type": "string"
                     },
+                    "is_system": {
+                        "type": "boolean"
+                    },
                     "created_at": {
                         "type": "string"
                     },
@@ -1763,6 +1766,7 @@
                     "name",
                     "description",
                     "color",
+                    "is_system",
                     "created_at",
                     "updated_at"
                 ],
