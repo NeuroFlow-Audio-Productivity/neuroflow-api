@@ -3,6 +3,7 @@
 use App\Http\Controllers\AudioController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\FlowController;
+use App\Http\Controllers\FlowNodeController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\ModeController;
 use App\Http\Controllers\ProfileController;
@@ -42,6 +43,7 @@ Route::get('/modes/all', [ModeController::class, 'getAll']);
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/audios/all', [AudioController::class, 'getAll']);
     Route::apiResource('audios', AudioController::class);
+    Route::apiResource('flow-nodes', FlowNodeController::class);
     Route::apiResource('flows', FlowController::class);
     Route::apiResource('items', ItemController::class)->only(['index', 'show']);
     Route::apiResource('modes', ModeController::class);

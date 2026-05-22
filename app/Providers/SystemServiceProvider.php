@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Services\AudioService;
+use App\Services\FlowNodeService;
 use App\Services\FlowService;
 use App\Services\Interfaces\IAudioService;
+use App\Services\Interfaces\IFlowNodeService;
 use App\Services\Interfaces\IFlowService;
 use App\Services\Interfaces\IItemService;
 use App\Services\Interfaces\IModeService;
@@ -24,6 +26,7 @@ class SystemServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(IAudioService::class, AudioService::class);
+        $this->app->bind(IFlowNodeService::class, FlowNodeService::class);
         $this->app->bind(IFlowService::class, FlowService::class);
         $this->app->bind(IItemService::class, ItemService::class);
         $this->app->bind(IModeService::class, ModeService::class);
