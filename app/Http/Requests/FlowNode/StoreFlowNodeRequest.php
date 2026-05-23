@@ -21,6 +21,10 @@ class StoreFlowNodeRequest extends FormRequest
     {
         return [
             /**
+             * Title for this node.
+             */
+            'title' => ['required', 'string', 'max:255'],
+            /**
              * Time in minutes for this node.
              */
             'time' => ['required', 'integer', 'min:1'],

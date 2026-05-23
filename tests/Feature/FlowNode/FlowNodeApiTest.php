@@ -138,6 +138,7 @@ class FlowNodeApiTest extends TestCase
         Sanctum::actingAs($user);
 
         $response = $this->postJson('/api/flow-nodes', [
+            'title' => 'Warm Up',
             'time' => 25,
             'order' => 1,
             'flow_id' => $flow->id,
@@ -147,6 +148,7 @@ class FlowNodeApiTest extends TestCase
 
         $response
             ->assertCreated()
+            ->assertJsonPath('title', 'Warm Up')
             ->assertJsonPath('time', 25)
             ->assertJsonPath('order', 1)
             ->assertJsonPath('flow_id', $flow->id)
@@ -154,6 +156,7 @@ class FlowNodeApiTest extends TestCase
             ->assertJsonPath('end_audio_id', $audio->id);
 
         $this->assertDatabaseHas('flow_nodes', [
+            'title' => 'Warm Up',
             'time' => 25,
             'order' => 1,
             'flow_id' => $flow->id,
@@ -170,6 +173,7 @@ class FlowNodeApiTest extends TestCase
         $mode = Mode::factory()->create();
         $audio = Audio::factory()->create();
         $flowNode = FlowNode::factory()->create([
+            'title' => 'Original Node',
             'time' => 25,
             'order' => 1,
             'flow_id' => $flow->id,
@@ -182,6 +186,7 @@ class FlowNodeApiTest extends TestCase
         $this->getJson("/api/flow-nodes/{$flowNode->id}")
             ->assertOk()
             ->assertJsonPath('id', $flowNode->id)
+            ->assertJsonPath('title', 'Original Node')
             ->assertJsonPath('time', 25)
             ->assertJsonPath('order', 1)
             ->assertJsonPath('flow.id', $flow->id)
@@ -189,6 +194,7 @@ class FlowNodeApiTest extends TestCase
             ->assertJsonPath('end_audio.id', $audio->id);
 
         $this->patchJson("/api/flow-nodes/{$flowNode->id}", [
+            'title' => 'Updated Node',
             'time' => 10,
             'order' => 2,
             'flow_id' => $otherOwnedFlow->id,
@@ -196,12 +202,14 @@ class FlowNodeApiTest extends TestCase
             'end_audio_id' => $audio->id,
         ])
             ->assertOk()
+            ->assertJsonPath('title', 'Updated Node')
             ->assertJsonPath('time', 10)
             ->assertJsonPath('order', 2)
             ->assertJsonPath('flow_id', $otherOwnedFlow->id);
 
         $this->assertDatabaseHas('flow_nodes', [
             'id' => $flowNode->id,
+            'title' => 'Updated Node',
             'time' => 10,
             'order' => 2,
             'flow_id' => $otherOwnedFlow->id,
@@ -305,7 +313,7 @@ class FlowNodeApiTest extends TestCase
 
         $this->postJson('/api/flow-nodes', [])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['time', 'order', 'flow_id', 'mode_id', 'end_audio_id']);
+            ->assertJsonValidationErrors(['title', 'time', 'order', 'flow_id', 'mode_id', 'end_audio_id']);
 
         $this->postJson('/api/flow-nodes', [
             'time' => 0,
@@ -315,10 +323,10 @@ class FlowNodeApiTest extends TestCase
             'end_audio_id' => 999,
         ])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['time', 'order', 'flow_id', 'mode_id', 'end_audio_id']);
+            ->assertJsonValidationErrors(['title', 'time', 'order', 'flow_id', 'mode_id', 'end_audio_id']);
 
         $this->patchJson("/api/flow-nodes/{$flowNode->id}", [])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['time', 'order', 'flow_id', 'mode_id', 'end_audio_id']);
+            ->assertJsonValidationErrors(['title', 'time', 'order', 'flow_id', 'mode_id', 'end_audio_id']);
     }
 }

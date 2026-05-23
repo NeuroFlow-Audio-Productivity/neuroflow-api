@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['time', 'order', 'flow_id', 'mode_id', 'end_audio_id'])]
+#[Fillable(['title', 'time', 'order', 'flow_id', 'mode_id', 'end_audio_id'])]
 class FlowNode extends Model
 {
     /** @use HasFactory<FlowNodeFactory> */

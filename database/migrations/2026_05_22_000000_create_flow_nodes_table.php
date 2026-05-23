@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('flow_nodes', function (Blueprint $table) {
             $table->id();
+            $table->string('title');
             $table->unsignedInteger('time');
             $table->unsignedInteger('order');
             $table->foreignId('flow_id')->constrained()->cascadeOnDelete();

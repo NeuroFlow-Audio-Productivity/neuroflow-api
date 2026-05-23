@@ -13,6 +13,7 @@ class FlowNodeResource extends ApiResource
     {
         return [
             'id' => $this->id,
+            'title' => $this->title,
             'time' => $this->time,
             'order' => $this->order,
             'flow_id' => $this->flow_id,

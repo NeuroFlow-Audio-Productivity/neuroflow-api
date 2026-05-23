@@ -24,6 +24,7 @@ class FlowNodeService extends Service implements IFlowNodeService
     public function createFlowNode(array $data): FlowNode
     {
         $flowNode = $this->flowNodeRepository->create(Arr::only($data, [
+            'title',
             'time',
             'order',
             'flow_id',
@@ -39,6 +40,7 @@ class FlowNodeService extends Service implements IFlowNodeService
     public function updateFlowNode(FlowNode $flowNode, array $data): FlowNode
     {
         $this->edit($flowNode->id, Arr::only($data, [
+            'title',
             'time',
             'order',
             'flow_id',

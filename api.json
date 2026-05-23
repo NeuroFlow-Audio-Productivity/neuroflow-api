@@ -1990,6 +1990,9 @@
                     "id": {
                         "type": "integer"
                     },
+                    "title": {
+                        "type": "string"
+                    },
                     "time": {
                         "type": "integer"
                     },
@@ -2023,6 +2026,7 @@
                 },
                 "required": [
                     "id",
+                    "title",
                     "time",
                     "order",
                     "flow_id",
@@ -2430,6 +2434,11 @@
             "StoreFlowNodeRequest": {
                 "type": "object",
                 "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Title for this node.",
+                        "maxLength": 255
+                    },
                     "time": {
                         "type": "integer",
                         "description": "Time in minutes for this node.",
@@ -2454,6 +2463,7 @@
                     }
                 },
                 "required": [
+                    "title",
                     "time",
                     "order",
                     "flow_id",
@@ -2581,6 +2591,11 @@
             "UpdateFlowNodeRequest": {
                 "type": "object",
                 "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Title for this node.",
+                        "maxLength": 255
+                    },
                     "time": {
                         "type": "integer",
                         "description": "Time in minutes for this node.",
@@ -2605,6 +2620,7 @@
                     }
                 },
                 "required": [
+                    "title",
                     "time",
                     "order",
                     "flow_id",

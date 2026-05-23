@@ -21,6 +21,7 @@ class FlowNodeFactory extends Factory
     public function definition(): array
     {
         return [
+            'title' => fake()->words(3, true),
             'time' => fake()->numberBetween(1, 120),
             'order' => fake()->numberBetween(1, 20),
             'flow_id' => Flow::factory(),
