@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Throwable;
+use Illuminate\Http\Response as HttpResponse;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AudioService extends Service implements IAudioService
 {
@@ -24,30 +27,63 @@ class AudioService extends Service implements IAudioService
         parent::__construct($audioRepository);
     }
 
-    /**
-     * @return Collection<int, Audio>
-     */
-    public function getAllAudios(): Collection
+    public function stream(Audio $audio, ?string $rangeHeader): StreamedResponse|HttpResponse
     {
-        return $this->audioRepository->getAllWithMode();
-    }
+        abort_unless(Storage::exists($audio->path), Response::HTTP_NOT_FOUND);
 
-    public function paginateAudios(int $paginationAmount = 15): LengthAwarePaginator
-    {
-        return $this->audioRepository->paginateWithMode($paginationAmount);
-    }
+        $size = Storage::size($audio->path);
+        $start = 0;
+        $end = $size - 1;
+        $status = Response::HTTP_OK;
+        $headers = [
+            'Accept-Ranges'       => 'bytes',
+            'Content-Type'        => Storage::mimeType($audio->path) ?: 'application/octet-stream',
+            'Content-Disposition' => 'inline; filename="' . basename($audio->path) . '"',
+        ];
 
-    /**
-     * @return Collection<int, Audio>
-     */
-    public function getByMode(int $modeId): Collection
-    {
-        return $this->audioRepository->getByMode($modeId);
-    }
+        if ($rangeHeader !== null) {
+            $range = $this->parseRange($rangeHeader, $size);
 
-    public function paginateByMode(int $modeId, int $paginationAmount = 15): LengthAwarePaginator
-    {
-        return $this->audioRepository->paginateByMode($modeId, $paginationAmount);
+            if ($range === null) {
+                return response('', Response::HTTP_REQUESTED_RANGE_NOT_SATISFIABLE, [
+                    ...$headers,
+                    'Content-Range' => "bytes */{$size}",
+                ]);
+            }
+
+            [$start, $end] = $range;
+            $status = Response::HTTP_PARTIAL_CONTENT;
+            $headers['Content-Range'] = "bytes {$start}-{$end}/{$size}";
+        }
+
+        $length = $end - $start + 1;
+        $headers['Content-Length'] = (string) $length;
+
+        return response()->stream(function () use ($audio, $start, $length): void {
+            $stream = Storage::readStream($audio->path);
+
+            if ($stream === false) {
+                return;
+            }
+
+            fseek($stream, $start);
+
+            $remaining = $length;
+
+            while ($remaining > 0 && !feof($stream)) {
+                $chunk = fread($stream, min(8192, $remaining));
+
+                if ($chunk === false) {
+                    break;
+                }
+
+                echo $chunk;
+                $remaining -= strlen($chunk);
+                flush();
+            }
+
+            fclose($stream);
+        }, $status, $headers);
     }
 
     public function createAudio(array $data, UploadedFile $file): Audio
@@ -123,5 +159,38 @@ class AudioService extends Service implements IAudioService
         }
 
         return $path;
+    }
+
+    /**
+     * @return array{0: int, 1: int}|null
+     */
+    private function parseRange(string $range, int $size): ?array
+    {
+        if (! preg_match('/^bytes=(\d*)-(\d*)$/', $range, $matches)) {
+            return null;
+        }
+
+        if ($matches[1] === '' && $matches[2] === '') {
+            return null;
+        }
+
+        if ($matches[1] === '') {
+            $suffixLength = (int) $matches[2];
+
+            if ($suffixLength <= 0) {
+                return null;
+            }
+
+            return [max(0, $size - $suffixLength), $size - 1];
+        }
+
+        $start = (int) $matches[1];
+        $end = $matches[2] === '' ? $size - 1 : (int) $matches[2];
+
+        if ($start > $end || $start >= $size) {
+            return null;
+        }
+
+        return [$start, min($end, $size - 1)];
     }
 }
