@@ -45,8 +45,9 @@ abstract class Repository implements IRepository
     public function edit($id, $data)
     {
         $model = $this->model->find($id);
+        $model->update($data);
 
-        return $model->update($data);
+        return $model->fresh();
     }
 
     public function delete($id)

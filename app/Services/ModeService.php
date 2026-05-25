@@ -16,43 +16,4 @@ class ModeService extends Service implements IModeService
     ) {
         parent::__construct($modeRepository);
     }
-
-    public function getAllModes(): Collection
-    {
-        return $this->modeRepository->getAll();
-    }
-
-    public function paginateModes(int $paginationAmount = 15): LengthAwarePaginator
-    {
-        return $this->modeRepository->paginate($paginationAmount);
-    }
-
-    public function createMode(array $data): Mode
-    {
-        return $this->modeRepository->create(Arr::only($data, [
-            'name',
-            'description',
-            'color',
-            'is_system',
-        ]));
-    }
-
-    public function updateMode(Mode $mode, array $data): Mode
-    {
-        $this->edit($mode->id, Arr::only($data, [
-            'name',
-            'description',
-            'color',
-            'is_system',
-        ]));
-
-        $mode->refresh();
-
-        return $mode;
-    }
-
-    public function deleteMode(Mode $mode): bool
-    {
-        return $this->delete($mode->id);
-    }
 }

@@ -26,7 +26,7 @@ class ModeController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         return ModeResource::collection(
-            $this->modeService->paginateModes($this->paginationAmount($request)),
+            $this->modeService->listRecords(paginationAmount: $this->paginationAmount($request)),
         );
     }
 
@@ -35,7 +35,7 @@ class ModeController extends Controller
      */
     public function getAll(): AnonymousResourceCollection
     {
-        return ModeResource::collection($this->modeService->getAllModes());
+        return ModeResource::collection($this->modeService->getAll());
     }
 
     /**
@@ -43,7 +43,7 @@ class ModeController extends Controller
      */
     public function store(StoreModeRequest $request): ModeResource
     {
-        $mode = $this->modeService->createMode($request->validated());
+        $mode = $this->modeService->insert($request->validated());
 
         return new ModeResource($mode, Response::HTTP_CREATED);
     }
@@ -61,7 +61,7 @@ class ModeController extends Controller
      */
     public function update(UpdateModeRequest $request, Mode $mode): ModeResource
     {
-        $mode = $this->modeService->updateMode($mode, $request->validated());
+        $mode = $this->modeService->edit($mode->id, $request->validated());
 
         return new ModeResource($mode);
     }
@@ -71,7 +71,7 @@ class ModeController extends Controller
      */
     public function destroy(Mode $mode): HttpResponse
     {
-        $this->modeService->deleteMode($mode);
+        $this->modeService->delete($mode->id);
 
         return response()->noContent();
     }

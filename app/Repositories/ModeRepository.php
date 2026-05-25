@@ -12,11 +12,4 @@ class ModeRepository extends Repository implements IModeRepository
     {
         return Mode::class;
     }
-
-    public function paginate(int $paginationAmount): LengthAwarePaginator
-    {
-        return Mode::query()
-            ->orderBy('id')
-            ->paginate($paginationAmount);
-    }
 }
