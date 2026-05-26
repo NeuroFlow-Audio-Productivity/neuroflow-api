@@ -38,7 +38,7 @@ class FlowNodeController extends Controller
      */
     public function store(StoreFlowNodeRequest $request): FlowNodeResource
     {
-        $flowNode = $this->flowNodeService->createFlowNode($request->validated());
+        $flowNode = $this->flowNodeService->insert($request->validated());
 
         return new FlowNodeResource($flowNode, Response::HTTP_CREATED);
     }
@@ -58,7 +58,7 @@ class FlowNodeController extends Controller
      */
     public function update(UpdateFlowNodeRequest $request, FlowNode $flowNode): FlowNodeResource
     {
-        $flowNode = $this->flowNodeService->updateFlowNode($flowNode, $request->validated());
+        $flowNode = $this->flowNodeService->edit($flowNode->id, $request->validated());
 
         return new FlowNodeResource($flowNode);
     }
@@ -68,7 +68,7 @@ class FlowNodeController extends Controller
      */
     public function destroy(FlowNode $flowNode): HttpResponse
     {
-        $this->flowNodeService->deleteFlowNode($flowNode);
+        $this->flowNodeService->delete($flowNode->id);
 
         return response()->noContent();
     }
