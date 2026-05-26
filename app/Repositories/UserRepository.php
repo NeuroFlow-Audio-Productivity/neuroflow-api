@@ -16,22 +16,6 @@ class UserRepository extends Repository implements IUserRepository
         return User::class;
     }
 
-    public function getAllWithProfile(): Collection
-    {
-        return $this->model->newQuery()
-            ->with('profile')
-            ->orderBy('id')
-            ->get();
-    }
-
-    public function paginateWithProfile(int $paginationAmount): LengthAwarePaginator
-    {
-        return $this->model->newQuery()
-            ->with('profile')
-            ->orderBy('id')
-            ->paginate($paginationAmount);
-    }
-
     public function searchByNameOrEmail(
         ?string $search,
         ?string $name,

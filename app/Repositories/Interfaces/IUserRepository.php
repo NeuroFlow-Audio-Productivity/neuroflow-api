@@ -9,10 +9,6 @@ use Laravel\Sanctum\NewAccessToken;
 
 interface IUserRepository extends IRepository
 {
-    public function getAllWithProfile(): Collection;
-
-    public function paginateWithProfile(int $paginationAmount): LengthAwarePaginator;
-
     public function searchByNameOrEmail(
         ?string $search,
         ?string $name,

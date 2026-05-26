@@ -29,16 +29,6 @@ class UserService extends Service implements IUserService
         parent::__construct($userRepository);
     }
 
-    public function getAllUsers(): Collection
-    {
-        return $this->userRepository->getAllWithProfile();
-    }
-
-    public function paginateUsers(int $paginationAmount = 15): LengthAwarePaginator
-    {
-        return $this->userRepository->paginateWithProfile($paginationAmount);
-    }
-
     public function searchByNameOrEmail(
         ?string $search,
         ?string $name,
