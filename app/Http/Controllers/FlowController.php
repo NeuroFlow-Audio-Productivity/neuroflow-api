@@ -38,10 +38,11 @@ class FlowController extends Controller
      */
     public function store(StoreFlowRequest $request): FlowResource
     {
-        $flow = $this->flowService->createFlow(
-            $request->validated(),
-            $request->user()->id,
-        );
+        $data = $request->validated();
+
+        $data['user_id'] = $request->user()->id;
+
+        $flow = $this->flowService->insert($data);
 
         return new FlowResource($flow, Response::HTTP_CREATED);
     }
@@ -59,7 +60,7 @@ class FlowController extends Controller
      */
     public function update(UpdateFlowRequest $request, Flow $flow): FlowResource
     {
-        $flow = $this->flowService->updateFlow($flow, $request->validated());
+        $flow = $this->flowService->edit($flow->id, $request->validated());
 
         return new FlowResource($flow);
     }
@@ -69,7 +70,7 @@ class FlowController extends Controller
      */
     public function destroy(Flow $flow): HttpResponse
     {
-        $this->flowService->deleteFlow($flow);
+        $this->flowService->delete($flow->id);
 
         return response()->noContent();
     }

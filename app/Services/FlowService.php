@@ -20,26 +20,4 @@ class FlowService extends Service implements IFlowService
     {
         return $this->flowRepository->paginateForUser($userId, $paginationAmount);
     }
-
-    public function createFlow(array $data, int $userId): Flow
-    {
-        return $this->flowRepository->create([
-            ...Arr::only($data, ['name']),
-            'user_id' => $userId,
-        ]);
-    }
-
-    public function updateFlow(Flow $flow, array $data): Flow
-    {
-        $this->edit($flow->id, Arr::only($data, ['name']));
-
-        $flow->refresh();
-
-        return $flow;
-    }
-
-    public function deleteFlow(Flow $flow): bool
-    {
-        return $this->delete($flow->id);
-    }
 }
