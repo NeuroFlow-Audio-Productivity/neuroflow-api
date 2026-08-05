@@ -34,6 +34,10 @@ class UpdateModeRequest extends FormRequest
              * Hex color used to represent the mode.
              */
             'color' => ['required', 'string', 'size:7', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            /**
+             * Indicates whether the mode is used by system sounds instead of normal audio playback.
+             */
+            'is_system' => ['required', 'boolean'],
         ];
     }
 

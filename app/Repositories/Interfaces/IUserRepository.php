@@ -9,10 +9,6 @@ use Laravel\Sanctum\NewAccessToken;
 
 interface IUserRepository extends IRepository
 {
-    public function getAllWithProfile(): Collection;
-
-    public function paginateWithProfile(int $paginationAmount): LengthAwarePaginator;
-
     public function searchByNameOrEmail(
         ?string $search,
         ?string $name,
@@ -21,6 +17,13 @@ interface IUserRepository extends IRepository
     ): LengthAwarePaginator;
 
     public function findByEmail(string $email): ?User;
+
+    public function findByGoogleId(string $googleId): ?User;
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function updateGoogleIdentity(User $user, array $data): bool;
 
     public function createAccessToken(User $user, string $tokenName): NewAccessToken;
 

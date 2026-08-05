@@ -9,11 +9,12 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['profile_id', 'name', 'email', 'email_verified_at', 'password'])]
+#[Fillable(['profile_id', 'name', 'email', 'email_verified_at', 'google_id', 'google_avatar_url', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -39,6 +40,14 @@ class User extends Authenticatable implements MustVerifyEmail
     public function profile(): BelongsTo
     {
         return $this->belongsTo(Profile::class);
+    }
+
+    /**
+     * @return HasMany<Flow, $this>
+     */
+    public function flows(): HasMany
+    {
+        return $this->hasMany(Flow::class);
     }
 
     public function isAdmin(): bool

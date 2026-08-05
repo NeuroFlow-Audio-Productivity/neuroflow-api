@@ -1,9 +1,9 @@
 {
     "openapi": "3.1.0",
     "info": {
-        "title": "Laravel",
+        "title": "Neuroflow",
         "version": "1.0.0",
-        "description": "Reference for the Neuroflow API, including Sanctum authentication, email verification, password reset, and authenticated user endpoints."
+        "description": "Reference for the Neuroflow API, including Sanctum authentication, Google OAuth, email verification, password reset, and authenticated user endpoints."
     },
     "servers": [
         {
@@ -79,6 +79,91 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                }
+            }
+        },
+        "/modes/{mode}/audios": {
+            "get": {
+                "operationId": "audio.byMode",
+                "summary": "List the available audios for a mode",
+                "tags": [
+                    "Audio"
+                ],
+                "parameters": [
+                    {
+                        "name": "mode",
+                        "in": "path",
+                        "required": true,
+                        "description": "The mode ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `AudioResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/AudioResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    }
+                },
+                "security": []
+            }
+        },
+        "/audios/all": {
+            "get": {
+                "operationId": "audio.getAll",
+                "summary": "List every available audio without pagination",
+                "tags": [
+                    "Audio"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `AudioResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/AudioResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
             }
@@ -283,55 +368,6 @@
                 }
             }
         },
-        "/modes/{mode}/audios": {
-            "get": {
-                "operationId": "audio.byMode",
-                "summary": "List the available audios for a mode",
-                "tags": [
-                    "Audio"
-                ],
-                "parameters": [
-                    {
-                        "name": "mode",
-                        "in": "path",
-                        "required": true,
-                        "description": "The mode ID",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Array of `AudioResource`",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/AudioResource"
-                                            }
-                                        }
-                                    },
-                                    "required": [
-                                        "data"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/ModelNotFoundException"
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/AuthenticationException"
-                    }
-                }
-            }
-        },
         "/auth/register": {
             "post": {
                 "operationId": "auth.register",
@@ -380,6 +416,180 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`LoginResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LoginResource"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": []
+            }
+        },
+        "/auth/google/redirect": {
+            "get": {
+                "operationId": "auth.googleRedirect",
+                "description": "The frontend should redirect the user to the returned URL and may provide\nits own redirect_uri and state values when they match the Google client settings.",
+                "summary": "Generate the Google OAuth authorization URL",
+                "tags": [
+                    "Auth"
+                ],
+                "parameters": [
+                    {
+                        "name": "redirect_uri",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "format": "uri",
+                            "maxLength": 2048
+                        }
+                    },
+                    {
+                        "name": "state",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 500
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`GoogleRedirectResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GoogleRedirectResource"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                },
+                "security": []
+            }
+        },
+        "/auth/google/callback": {
+            "get": {
+                "operationId": "auth.googleBrowserCallback",
+                "description": "Success redirects to FRONTEND_URL/auth/callback with the issued auth\ntoken payload. Failures redirect to FRONTEND_URL/login with an error\nquery parameter. Existing password accounts redirect with\nerror=auth_provider_password.",
+                "summary": "Process Google's browser OAuth callback and redirect to the frontend",
+                "tags": [
+                    "Auth"
+                ],
+                "parameters": [
+                    {
+                        "name": "code",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "error",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "error_description",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 2048
+                        }
+                    },
+                    {
+                        "name": "redirect_uri",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "format": "uri",
+                            "maxLength": 2048
+                        }
+                    },
+                    {
+                        "name": "device_name",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "code_verifier",
+                        "in": "query",
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "maxLength": 2048
+                        }
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Redirects to FRONTEND_URL/auth/callback on success or FRONTEND_URL/login on failure.",
+                        "headers": {
+                            "Location": {
+                                "description": "Frontend callback or login URL with OAuth result query parameters.",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            },
+            "post": {
+                "operationId": "auth.googleCallback",
+                "description": "Use this endpoint when the frontend receives Google's authorization code\nand exchanges it with the API. Browser redirects from Google should use\nthe GET callback, which redirects back to the frontend instead of\ndisplaying JSON.",
+                "summary": "Exchange a Google OAuth authorization code for a Sanctum access token",
+                "tags": [
+                    "Auth"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GoogleCallbackRequest"
                             }
                         }
                     }
@@ -634,6 +844,422 @@
                 }
             }
         },
+        "/flows": {
+            "get": {
+                "operationId": "flows.index",
+                "summary": "List the authenticated user's flows",
+                "tags": [
+                    "Flow"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `FlowResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/FlowResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "flows.store",
+                "summary": "Create a flow for the authenticated user",
+                "tags": [
+                    "Flow"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreFlowRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`FlowResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FlowResource"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/flows/{flow}": {
+            "get": {
+                "operationId": "flows.show",
+                "summary": "Show one of the authenticated user's flows",
+                "tags": [
+                    "Flow"
+                ],
+                "parameters": [
+                    {
+                        "name": "flow",
+                        "in": "path",
+                        "required": true,
+                        "description": "The flow ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`FlowResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FlowResource"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "flows.update",
+                "summary": "Update one of the authenticated user's flows",
+                "tags": [
+                    "Flow"
+                ],
+                "parameters": [
+                    {
+                        "name": "flow",
+                        "in": "path",
+                        "required": true,
+                        "description": "The flow ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateFlowRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`FlowResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FlowResource"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "flows.destroy",
+                "summary": "Delete one of the authenticated user's flows",
+                "tags": [
+                    "Flow"
+                ],
+                "parameters": [
+                    {
+                        "name": "flow",
+                        "in": "path",
+                        "required": true,
+                        "description": "The flow ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/flow-nodes": {
+            "get": {
+                "operationId": "flow-nodes.index",
+                "summary": "List the nodes from one of the authenticated user's flows",
+                "tags": [
+                    "FlowNode"
+                ],
+                "parameters": [
+                    {
+                        "name": "flow_id",
+                        "in": "query",
+                        "required": true,
+                        "description": "Flow whose nodes should be listed. The authenticated user must own this flow.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `FlowNodeResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/FlowNodeResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "flow-nodes.store",
+                "summary": "Create a node inside one of the authenticated user's flows",
+                "tags": [
+                    "FlowNode"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreFlowNodeRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`FlowNodeResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FlowNodeResource"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            }
+        },
+        "/flow-nodes/{flowNode}": {
+            "get": {
+                "operationId": "flow-nodes.show",
+                "summary": "Show a node from one of the authenticated user's flows",
+                "tags": [
+                    "FlowNode"
+                ],
+                "parameters": [
+                    {
+                        "name": "flowNode",
+                        "in": "path",
+                        "required": true,
+                        "description": "The flow node ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`FlowNodeResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FlowNodeResource"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "flow-nodes.update",
+                "summary": "Update a node from one of the authenticated user's flows",
+                "tags": [
+                    "FlowNode"
+                ],
+                "parameters": [
+                    {
+                        "name": "flowNode",
+                        "in": "path",
+                        "required": true,
+                        "description": "The flow node ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateFlowNodeRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "`FlowNodeResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FlowNodeResource"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationException"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "flow-nodes.destroy",
+                "summary": "Delete a node from one of the authenticated user's flows",
+                "tags": [
+                    "FlowNode"
+                ],
+                "parameters": [
+                    {
+                        "name": "flowNode",
+                        "in": "path",
+                        "required": true,
+                        "description": "The flow node ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/ModelNotFoundException"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/items": {
             "get": {
                 "operationId": "items.index",
@@ -711,6 +1337,39 @@
                         "$ref": "#/components/responses/AuthenticationException"
                     }
                 }
+            }
+        },
+        "/modes/all": {
+            "get": {
+                "operationId": "mode.getAll",
+                "summary": "List every application mode without pagination",
+                "tags": [
+                    "Mode"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `ModeResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ModeResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
             }
         },
         "/modes": {
@@ -993,6 +1652,82 @@
                 }
             }
         },
+        "/users/all": {
+            "get": {
+                "operationId": "user.getAll",
+                "summary": "List every user without pagination",
+                "tags": [
+                    "User"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `UserResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/UserResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
+        "/users/search": {
+            "get": {
+                "operationId": "user.search",
+                "summary": "Search users by name and/or email",
+                "tags": [
+                    "User"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Array of `UserResource`",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/UserResource"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "data"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/AuthorizationException"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/AuthenticationException"
+                    }
+                }
+            }
+        },
         "/users": {
             "get": {
                 "operationId": "users.index",
@@ -1249,6 +1984,87 @@
                 ],
                 "title": "AudioResource"
             },
+            "FlowNodeResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "time": {
+                        "type": "integer"
+                    },
+                    "order": {
+                        "type": "integer"
+                    },
+                    "flow_id": {
+                        "type": "integer"
+                    },
+                    "flow": {
+                        "$ref": "#/components/schemas/FlowResource"
+                    },
+                    "mode_id": {
+                        "type": "integer"
+                    },
+                    "mode": {
+                        "$ref": "#/components/schemas/ModeResource"
+                    },
+                    "end_audio_id": {
+                        "type": "integer"
+                    },
+                    "end_audio": {
+                        "$ref": "#/components/schemas/AudioResource"
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "title",
+                    "time",
+                    "order",
+                    "flow_id",
+                    "mode_id",
+                    "end_audio_id",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "FlowNodeResource"
+            },
+            "FlowResource": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "user_id": {
+                        "type": "integer"
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "updated_at": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "user_id",
+                    "created_at",
+                    "updated_at"
+                ],
+                "title": "FlowResource"
+            },
             "ForgotPasswordRequest": {
                 "type": "object",
                 "properties": {
@@ -1261,6 +2077,71 @@
                     "email"
                 ],
                 "title": "ForgotPasswordRequest"
+            },
+            "GoogleCallbackRequest": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string"
+                    },
+                    "error": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "error_description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 2048
+                    },
+                    "redirect_uri": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "uri",
+                        "maxLength": 2048
+                    },
+                    "device_name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 255
+                    },
+                    "code_verifier": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "maxLength": 2048
+                    }
+                },
+                "required": [
+                    "code"
+                ],
+                "title": "GoogleCallbackRequest"
+            },
+            "GoogleRedirectResource": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "const": "Google authorization URL generated successfully."
+                    },
+                    "authorization_url": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "message",
+                    "authorization_url"
+                ],
+                "title": "GoogleRedirectResource"
             },
             "ItemResource": {
                 "type": "object",
@@ -1367,6 +2248,9 @@
                     "color": {
                         "type": "string"
                     },
+                    "is_system": {
+                        "type": "boolean"
+                    },
                     "created_at": {
                         "type": "string"
                     },
@@ -1379,6 +2263,7 @@
                     "name",
                     "description",
                     "color",
+                    "is_system",
                     "created_at",
                     "updated_at"
                 ],
@@ -1546,6 +2431,61 @@
                 ],
                 "title": "StoreAudioRequest"
             },
+            "StoreFlowNodeRequest": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Title for this node.",
+                        "maxLength": 255
+                    },
+                    "time": {
+                        "type": "integer",
+                        "description": "Time in minutes for this node.",
+                        "minimum": 1
+                    },
+                    "order": {
+                        "type": "integer",
+                        "description": "Position of this node inside its flow.",
+                        "minimum": 1
+                    },
+                    "flow_id": {
+                        "type": "integer",
+                        "description": "Parent flow. The authenticated user must own this flow."
+                    },
+                    "mode_id": {
+                        "type": "integer",
+                        "description": "Mode applied during this node."
+                    },
+                    "end_audio_id": {
+                        "type": "integer",
+                        "description": "Audio played when this node ends."
+                    }
+                },
+                "required": [
+                    "title",
+                    "time",
+                    "order",
+                    "flow_id",
+                    "mode_id",
+                    "end_audio_id"
+                ],
+                "title": "StoreFlowNodeRequest"
+            },
+            "StoreFlowRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Display name for the flow. The owner is always the authenticated user.",
+                        "maxLength": 255
+                    }
+                },
+                "required": [
+                    "name"
+                ],
+                "title": "StoreFlowRequest"
+            },
             "StoreModeRequest": {
                 "type": "object",
                 "properties": {
@@ -1564,12 +2504,17 @@
                         "pattern": "^#[0-9A-Fa-f]{6}$",
                         "minLength": 7,
                         "maxLength": 7
+                    },
+                    "is_system": {
+                        "type": "boolean",
+                        "description": "Indicates whether the mode is used by system sounds instead of normal audio playback."
                     }
                 },
                 "required": [
                     "name",
                     "description",
-                    "color"
+                    "color",
+                    "is_system"
                 ],
                 "title": "StoreModeRequest"
             },
@@ -1643,6 +2588,61 @@
                 },
                 "title": "UpdateAudioRequest"
             },
+            "UpdateFlowNodeRequest": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "Title for this node.",
+                        "maxLength": 255
+                    },
+                    "time": {
+                        "type": "integer",
+                        "description": "Time in minutes for this node.",
+                        "minimum": 1
+                    },
+                    "order": {
+                        "type": "integer",
+                        "description": "Position of this node inside its flow.",
+                        "minimum": 1
+                    },
+                    "flow_id": {
+                        "type": "integer",
+                        "description": "Parent flow. The authenticated user must own this flow."
+                    },
+                    "mode_id": {
+                        "type": "integer",
+                        "description": "Mode applied during this node."
+                    },
+                    "end_audio_id": {
+                        "type": "integer",
+                        "description": "Audio played when this node ends."
+                    }
+                },
+                "required": [
+                    "title",
+                    "time",
+                    "order",
+                    "flow_id",
+                    "mode_id",
+                    "end_audio_id"
+                ],
+                "title": "UpdateFlowNodeRequest"
+            },
+            "UpdateFlowRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Display name for the flow. The owner cannot be changed through this endpoint.",
+                        "maxLength": 255
+                    }
+                },
+                "required": [
+                    "name"
+                ],
+                "title": "UpdateFlowRequest"
+            },
             "UpdateModeRequest": {
                 "type": "object",
                 "properties": {
@@ -1661,12 +2661,17 @@
                         "pattern": "^#[0-9A-Fa-f]{6}$",
                         "minLength": 7,
                         "maxLength": 7
+                    },
+                    "is_system": {
+                        "type": "boolean",
+                        "description": "Indicates whether the mode is used by system sounds instead of normal audio playback."
                     }
                 },
                 "required": [
                     "name",
                     "description",
-                    "color"
+                    "color",
+                    "is_system"
                 ],
                 "title": "UpdateModeRequest"
             },
@@ -1744,6 +2749,19 @@
                     "email_verified_at": {
                         "type": "string"
                     },
+                    "auth_provider": {
+                        "type": "string",
+                        "enum": [
+                            "google",
+                            "password"
+                        ]
+                    },
+                    "google_avatar_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "created_at": {
                         "type": "string"
                     },
@@ -1756,6 +2774,8 @@
                     "name",
                     "email",
                     "email_verified_at",
+                    "auth_provider",
+                    "google_avatar_url",
                     "created_at",
                     "updated_at"
                 ],

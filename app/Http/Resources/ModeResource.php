@@ -16,6 +16,7 @@ class ModeResource extends ApiResource
             'name' => $this->name,
             'description' => $this->description,
             'color' => $this->color,
+            'is_system' => $this->is_system,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

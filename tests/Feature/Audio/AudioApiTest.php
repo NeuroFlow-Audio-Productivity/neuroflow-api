@@ -27,7 +27,6 @@ class AudioApiTest extends TestCase
     public function test_audios_require_authentication(): void
     {
         $this->getJson('/api/audios')->assertUnauthorized();
-        $this->getJson('/api/modes/1/audios')->assertUnauthorized();
         $this->postJson('/api/audios')->assertUnauthorized();
     }
 
@@ -91,10 +90,8 @@ class AudioApiTest extends TestCase
             ->assertJsonCount(3, 'data');
     }
 
-    public function test_authenticated_user_can_list_audios_by_mode(): void
+    public function test_unauthenticated_user_can_list_audios_by_mode(): void
     {
-        Sanctum::actingAs(User::factory()->create());
-
         $focusMode = Mode::factory()->create(['name' => 'Focus']);
         $calmMode = Mode::factory()->create(['name' => 'Calm']);
         Audio::factory()->create([

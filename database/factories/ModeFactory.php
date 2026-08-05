@@ -24,6 +24,7 @@ class ModeFactory extends Factory
             'name' => Str::headline($name),
             'description' => fake()->sentence(),
             'color' => fake()->hexColor(),
+            'is_system' => false,
         ];
     }
 }

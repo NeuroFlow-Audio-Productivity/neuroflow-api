@@ -30,7 +30,7 @@ class UserController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         return UserResource::collection(
-            $this->userService->paginateUsers($this->paginationAmount($request)),
+            $this->userService->listRecords(paginationAmount: $this->paginationAmount($request), with: ['profile']),
         );
     }
 
@@ -41,7 +41,7 @@ class UserController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
-        return UserResource::collection($this->userService->getAllUsers());
+        return UserResource::collection($this->userService->getAll(with: ['profile']));
     }
 
     /**

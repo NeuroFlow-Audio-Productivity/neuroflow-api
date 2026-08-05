@@ -3,6 +3,8 @@
 namespace App\Repositories;
 
 use App\Repositories\Interfaces\IRepository;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 abstract class Repository implements IRepository
 {
@@ -18,13 +20,17 @@ abstract class Repository implements IRepository
         return $this->model->create($data);
     }
 
-    public function listRecords(array $filters, int $paginationAmount)
+    public function listRecords(int $paginationAmount, array $filters = [], array $with = []): LengthAwarePaginator
     {
         $query = $this->model->query();
 
+        if (!empty($with)) {
+            $query->with($with);
+        }
+
         foreach ($filters as $name => $value) {
-            if ($value != null && $name != 'pagination_amount') {
-                $query = $query->where($name, $value);
+            if ($value !== null && $name !== 'pagination_amount') {
+                $query->where($name, $value);
             }
         }
 
@@ -39,8 +45,9 @@ abstract class Repository implements IRepository
     public function edit($id, $data)
     {
         $model = $this->model->find($id);
+        $model->update($data);
 
-        return $model->update($data);
+        return $model->fresh();
     }
 
     public function delete($id)
@@ -50,9 +57,15 @@ abstract class Repository implements IRepository
         return $model->delete();
     }
 
-    public function getAll()
+    public function getAll(array $with = []): Collection
     {
-        return $this->model->get();
+        $query = $this->model->query();
+
+        if (!empty($with)) {
+            $query->with($with);
+        }
+
+        return $query->orderBy('id')->get();
     }
 
     public function find(int $id)
