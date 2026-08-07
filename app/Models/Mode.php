@@ -20,7 +20,7 @@ class Mode extends Model
     {
         return [
             [
-                'name' => 'Sleep',
+                'name' => 'Focus',
                 'description' => 'Beta waves: discreet pulses for distraction-free work blocks.',
                 'color' => '#6ee7d8',
             ],

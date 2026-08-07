@@ -12,6 +12,11 @@ class ModeSeeder extends Seeder
      */
     public function run(): void
     {
+        Mode::query()
+            ->where('name', 'Sleep')
+            ->where('color', '#6ee7d8')
+            ->update(['name' => 'Focus']);
+
         foreach (Mode::defaults() as $mode) {
             Mode::query()->updateOrCreate(
                 [
