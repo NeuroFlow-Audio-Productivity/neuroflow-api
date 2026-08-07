@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
+use App\Http\Requests\Auth\GoogleCallbackRequest;
+use App\Http\Requests\Auth\GoogleRedirectRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\ResendVerificationEmailRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
+use App\Http\Resources\Auth\GoogleRedirectResource;
 use App\Http\Resources\Auth\LoginResource;
 use App\Http\Resources\Auth\MessageResource;
 use App\Http\Resources\Auth\ResetPasswordTokenResource;
@@ -15,8 +18,11 @@ use App\Http\Resources\Auth\UserPayloadResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\Interfaces\IUserService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class AuthController extends Controller
 {
@@ -55,6 +61,139 @@ class AuthController extends Controller
             $payload['token_type'],
             $payload['user'],
         );
+    }
+
+    /**
+     * Generate the Google OAuth authorization URL.
+     *
+     * The frontend should redirect the user to the returned URL and may provide
+     * its own redirect_uri and state values when they match the Google client settings.
+     *
+     * @unauthenticated
+     */
+    public function googleRedirect(GoogleRedirectRequest $request): GoogleRedirectResource
+    {
+        return new GoogleRedirectResource(
+            'Google authorization URL generated successfully.',
+            $this->userService->googleAuthorizationUrl($request->validated()),
+        );
+    }
+
+    /**
+     * Exchange a Google OAuth authorization code for a Sanctum access token.
+     *
+     * Use this endpoint when the frontend receives Google's authorization code
+     * and exchanges it with the API. Browser redirects from Google should use
+     * the GET callback, which redirects back to the frontend instead of
+     * displaying JSON.
+     *
+     * @unauthenticated
+     */
+    public function googleCallback(GoogleCallbackRequest $request): LoginResource
+    {
+        $payload = $this->userService->loginWithGoogle($request->validated());
+
+        return new LoginResource(
+            'Google login successful.',
+            $payload['access_token'],
+            $payload['token_type'],
+            $payload['user'],
+        );
+    }
+
+    /**
+     * Process Google's browser OAuth callback and redirect to the frontend.
+     *
+     * Success redirects to FRONTEND_URL/auth/callback with the issued auth
+     * token payload. Failures redirect to FRONTEND_URL/login with an error
+     * query parameter. Existing password accounts redirect with
+     * error=auth_provider_password.
+     *
+     * @unauthenticated
+     */
+    public function googleBrowserCallback(GoogleCallbackRequest $request): RedirectResponse
+    {
+        $data = $request->validated();
+
+        if (! empty($data['error'])) {
+            return $this->redirectToFrontendLogin(
+                'auth_google_failed',
+                $data['error_description'] ?? null,
+                ['provider_error' => $data['error']],
+            );
+        }
+
+        try {
+            $payload = $this->userService->loginWithGoogle($data);
+        } catch (ValidationException $exception) {
+            return $this->redirectToFrontendLogin(
+                $this->googleValidationErrorCode($exception),
+                $this->firstValidationMessage($exception),
+            );
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return $this->redirectToFrontendLogin('auth_google_failed');
+        }
+
+        return redirect()->away($this->frontendUrl('/auth/callback', [
+            'access_token' => $payload['access_token'],
+            'token_type' => $payload['token_type'],
+        ]));
+    }
+
+    private function redirectToFrontendLogin(string $error, ?string $message = null, array $extra = []): RedirectResponse
+    {
+        return redirect()->away($this->frontendUrl('/login', [
+            'error' => $error,
+            'message' => $message,
+            ...$extra,
+        ]));
+    }
+
+    private function frontendUrl(string $path, array $query = []): string
+    {
+        $url = rtrim((string) config('app.frontend_url'), '/').'/'.ltrim($path, '/');
+        $query = array_filter(
+            $query,
+            static fn (mixed $value): bool => $value !== null && $value !== '',
+        );
+
+        if ($query === []) {
+            return $url;
+        }
+
+        return $url.'?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986);
+    }
+
+    private function googleValidationErrorCode(ValidationException $exception): string
+    {
+        $errors = $exception->errors();
+
+        if (($errors['auth_provider'][0] ?? null) === 'password') {
+            return 'auth_provider_password';
+        }
+
+        if (array_key_exists('code', $errors)) {
+            return 'auth_google_code';
+        }
+
+        if (array_key_exists('email', $errors)) {
+            return 'auth_google_email';
+        }
+
+        return 'auth_google_failed';
+    }
+
+    private function firstValidationMessage(ValidationException $exception): ?string
+    {
+        foreach ($exception->errors() as $messages) {
+            if (isset($messages[0])) {
+                return (string) $messages[0];
+            }
+        }
+
+        return null;
     }
 
     /**

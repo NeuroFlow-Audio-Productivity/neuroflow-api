@@ -23,7 +23,7 @@ class ModeSeeder extends Seeder
                     'name' => $mode['name'],
                     'color' => $mode['color'],
                 ],
-                ['description' => $mode['description']],
+                ['description' => $mode['description'], 'is_system' => $mode['is_system']],
             );
         }
     }

@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Repositories\Interfaces\IRepository;
 use App\Services\Interfaces\IService;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 abstract class Service implements IService
 {
@@ -29,14 +31,14 @@ abstract class Service implements IService
         return $this->repository->delete($id);
     }
 
-    public function listRecords(array $filters, int $paginationAmount = 15)
+    public function listRecords(int $paginationAmount, array $filters = [], array $with = []): LengthAwarePaginator
     {
-        return $this->repository->listRecords($filters, $paginationAmount);
+        return $this->repository->listRecords($paginationAmount, $filters, $with);
     }
 
-    public function getAll()
+    public function getAll(array $with = []): Collection
     {
-        return $this->repository->getAll();
+        return $this->repository->getAll($with);
     }
 
     public function find(int $id)

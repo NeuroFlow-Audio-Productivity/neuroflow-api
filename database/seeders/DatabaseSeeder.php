@@ -22,17 +22,5 @@ class DatabaseSeeder extends Seeder
         $this->call(ItemSeeder::class);
         $this->call(ItemProfileSeeder::class);
         $this->call(ModeSeeder::class);
-
-        $userProfile = Profile::query()->where('slug', Profile::USER_SLUG)->firstOrFail();
-
-        User::query()->updateOrCreate(
-            ['email' => 'test@example.com'],
-            [
-                'profile_id' => $userProfile->id,
-                'name' => 'Test User',
-                'email_verified_at' => now(),
-                'password' => 'password',
-            ],
-        );
     }
 }

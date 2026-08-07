@@ -29,7 +29,7 @@ return [
         /*
          * Description rendered on the home page of the API documentation (`/docs/api`).
          */
-        'description' => 'Reference for the Neuroflow API, including Sanctum authentication, email verification, password reset, and authenticated user endpoints.',
+        'description' => 'Reference for the Neuroflow API, including Sanctum authentication, Google OAuth, email verification, password reset, and authenticated user endpoints.',
     ],
 
     /*
