@@ -93,7 +93,7 @@ class ModeApiTest extends TestCase
 
         $this->assertDatabaseCount('modes', 4);
         $this->assertDatabaseHas('modes', [
-            'name' => 'Sleep',
+            'name' => 'Focus',
             'description' => 'Beta waves: discreet pulses for distraction-free work blocks.',
             'color' => '#6ee7d8',
             'is_system' => false,
@@ -118,9 +118,9 @@ class ModeApiTest extends TestCase
         ]);
     }
 
-    public function test_mode_seeder_updates_existing_default_descriptions(): void
+    public function test_mode_seeder_corrects_legacy_focus_name_and_updates_default_descriptions(): void
     {
-        Mode::query()->create([
+        $legacyFocus = Mode::query()->create([
             'name' => 'Sleep',
             'description' => 'Discreet beta pulses for distraction-free work blocks.',
             'color' => '#6ee7d8',
@@ -143,7 +143,7 @@ class ModeApiTest extends TestCase
 
         $this->assertDatabaseCount('modes', 4);
         $this->assertDatabaseHas('modes', [
-            'name' => 'Sleep',
+            'name' => 'Focus',
             'description' => 'Beta waves: discreet pulses for distraction-free work blocks.',
             'color' => '#6ee7d8',
             'is_system' => false,
